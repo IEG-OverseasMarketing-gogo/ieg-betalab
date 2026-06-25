@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IEG Beta Lab — Campaign Tracker</title>
+<style>
+  :root {
+    --bg:#f8f7f4;--surface:#fff;--surface2:#f2f0ec;--border:rgba(0,0,0,.1);--border-md:rgba(0,0,0,.18);
+    --text:#1a1916;--text-muted:#6b6a66;--text-hint:#9e9d99;
+    --blue-50:#E6F1FB;--blue-200:#85B7EB;--blue-600:#185FA5;--blue-800:#0C447C;
+    --teal-50:#E1F5EE;--teal-200:#5DCAA5;--teal-600:#0F6E56;--teal-800:#085041;
+    --amber-50:#FAEEDA;--amber-200:#EF9F27;--amber-600:#854F0B;--amber-800:#633806;
+    --coral-50:#FAECE7;--coral-200:#F0997B;--coral-600:#993C1D;--coral-800:#712B13;
+    --purple-50:#EEEDFE;--purple-200:#AFA9EC;--purple-600:#534AB7;--purple-800:#3C3489;
+    --green-50:#EAF3DE;--green-200:#97C459;--green-600:#3B6D11;--green-800:#27500A;
+    --red-50:#FCEBEB;--red-600:#A32D2D;--red-800:#791F1F;
+    --gray-50:#F1EFE8;--gray-200:#B4B2A9;--gray-600:#5F5E5A;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:14px;
+    --font:-apple-system,'Segoe UI',sans-serif;--font-mono:'JetBrains Mono',monospace;
+  }
+  @media(prefers-color-scheme:dark){:root{
+    --bg:#1c1b18;--surface:#242320;--surface2:#2e2d29;
+    --border:rgba(255,255,255,.08);--border-md:rgba(255,255,255,.14);
+    --text:#f0ede6;--text-muted:#a09e99;--text-hint:#6b6a66;
+    --blue-50:#042C53;--blue-200:#0C447C;--blue-600:#85B7EB;--blue-800:#B5D4F4;
+    --teal-50:#04342C;--teal-200:#085041;--teal-600:#5DCAA5;--teal-800:#9FE1CB;
+    --amber-50:#412402;--amber-200:#633806;--amber-600:#EF9F27;--amber-800:#FAC775;
+    --coral-50:#4A1B0C;--coral-200:#712B13;--coral-600:#F0997B;--coral-800:#F5C4B3;
+    --purple-50:#26215C;--purple-200:#3C3489;--purple-600:#AFA9EC;--purple-800:#CECBF6;
+    --green-50:#173404;--green-200:#27500A;--green-600:#97C459;--green-800:#C0DD97;
+    --red-50:#501313;--red-600:#F09595;--red-800:#F7C1C1;
+    --gray-50:#2C2C2A;--gray-200:#444441;--gray-600:#B4B2A9;
+  }}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;line-height:1.6}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:.5px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;overflow-x:auto;gap:0}
+  .nav-logo{font-size:13px;font-weight:500;color:var(--text);margin-right:1.5rem;white-space:nowrap;padding:1rem 0;flex-shrink:0}
+  nav button{background:none;border:none;cursor:pointer;font:inherit;font-size:13px;color:var(--text-muted);padding:.9rem 1rem;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+  nav button.active,nav button:hover{color:var(--text);border-bottom-color:var(--blue-600)}
+  .nav-right{margin-left:auto;display:flex;align-items:center;gap:.75rem;padding:.5rem 0;flex-shrink:0}
+
+  /* SETUP BANNER */
+  #setup-banner{background:var(--amber-50);border-bottom:.5px solid var(--amber-200);padding:.6rem 1.5rem;display:flex;align-items:center;gap:.75rem;font-size:13px;color:var(--amber-800)}
+  #setup-banner.hidden{display:none}
+  #setup-banner input{flex:1;max-width:520px;padding:.35rem .6rem;font:inherit;font-size:12px;border:.5px solid var(--amber-200);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)}
+  #setup-banner button{font:inherit;font-size:12px;padding:.35rem .8rem;border-radius:var(--radius-sm);border:none;background:var(--amber-600);color:#fff;cursor:pointer;white-space:nowrap}
+
+  /* SECTIONS */
+  section{display:none;padding:2rem 1.5rem;max-width:920px;margin:0 auto}
+  section.active{display:block}
+  h1{font-size:22px;font-weight:500;margin-bottom:.4rem}
+  h2{font-size:17px;font-weight:500;margin-bottom:.75rem}
+  h3{font-size:14px;font-weight:500;margin-bottom:.4rem}
+  .eyebrow{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--text-hint);margin-bottom:.3rem}
+  .lead{font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:1.5rem}
+
+  /* CARDS */
+  .card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem}
+  .card+.card{margin-top:1rem}
+  .cg2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+  .cg3{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem}
+  .cg4{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem}
+
+  /* BADGES & STATUS */
+  .badge{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:var(--radius-sm)}
+  .b-blue{background:var(--blue-50);color:var(--blue-800)}
+  .b-teal{background:var(--teal-50);color:var(--teal-800)}
+  .b-amber{background:var(--amber-50);color:var(--amber-800)}
+  .b-purple{background:var(--purple-50);color:var(--purple-800)}
+  .b-green{background:var(--green-50);color:var(--green-800)}
+  .b-coral{background:var(--coral-50);color:var(--coral-800)}
+  .b-gray{background:var(--gray-50);color:var(--gray-600)}
+
+  .pill{display:inline-flex;align-items:center;gap:.3rem;font-size:11px;font-weight:500;padding:3px 10px;border-radius:99px;cursor:pointer;transition:opacity .15s}
+  .pill:hover{opacity:.8}
+  .p-draft{background:var(--gray-50);color:var(--gray-600)}
+  .p-scheduled{background:var(--blue-50);color:var(--blue-800)}
+  .p-live{background:var(--teal-50);color:var(--teal-800)}
+  .p-done{background:var(--green-50);color:var(--green-800)}
+
+  /* STAT CARDS */
+  .stat{background:var(--surface2);border-radius:var(--radius-md);padding:.9rem 1rem;text-align:center}
+  .stat-num{font-size:24px;font-weight:500;line-height:1.1}
+  .stat-label{font-size:11px;color:var(--text-muted);margin-top:.2rem}
+  .stat-delta{font-size:11px;margin-top:.15rem}
+  .delta-up{color:var(--green-600)}
+  .delta-dn{color:var(--red-600)}
+
+  /* TABLE */
+  .tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .tbl th{font-size:11px;font-weight:500;color:var(--text-hint);text-align:left;padding:.5rem .75rem;border-bottom:.5px solid var(--border);white-space:nowrap}
+  .tbl td{padding:.6rem .75rem;border-bottom:.5px solid var(--border);vertical-align:middle}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl tr:hover td{background:var(--surface2)}
+
+  /* FORM */
+  .fg{margin-bottom:.9rem}
+  .fl{font-size:12px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:.3rem}
+  .fi{width:100%;padding:.45rem .7rem;font:inherit;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)}
+  .fi:focus{outline:2px solid var(--blue-200)}
+  textarea.fi{resize:vertical;min-height:70px}
+  select.fi{appearance:none}
+
+  /* BUTTONS */
+  .btn{display:inline-flex;align-items:center;gap:.35rem;font:inherit;font-size:13px;padding:.45rem .9rem;border-radius:var(--radius-sm);border:.5px solid var(--border-md);background:var(--surface);color:var(--text);cursor:pointer;transition:background .15s;white-space:nowrap}
+  .btn:hover{background:var(--surface2)}
+  .btn.primary{background:var(--blue-600);color:#fff;border-color:transparent}
+  .btn.primary:hover{opacity:.9}
+  .btn.sm{font-size:11px;padding:.3rem .65rem}
+  .btn.danger{background:var(--red-50);color:var(--red-800);border-color:transparent}
+
+  /* TABS */
+  .tab-bar{display:flex;border-bottom:.5px solid var(--border);margin-bottom:1.25rem;overflow-x:auto}
+  .tab{font:inherit;font-size:13px;padding:.55rem 1rem;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;white-space:nowrap}
+  .tab.active{color:var(--text);border-bottom-color:var(--blue-600)}
+
+  /* TIMELINE */
+  .tl{position:relative;padding-left:1.75rem}
+  .tl::before{content:'';position:absolute;left:.5rem;top:.4rem;bottom:.4rem;width:1px;background:var(--border-md)}
+  .tl-item{position:relative;margin-bottom:1.25rem}
+  .tl-dot{position:absolute;left:-1.4rem;top:.3rem;width:9px;height:9px;border-radius:50%;border:2px solid var(--surface)}
+  .tl-date{font-size:11px;color:var(--text-hint);margin-bottom:.15rem}
+  .tl-title{font-size:13px;font-weight:500;margin-bottom:.15rem}
+  .tl-desc{font-size:12px;color:var(--text-muted)}
+
+  /* PROGRESS RING */
+  .ring-wrap{display:flex;flex-direction:column;align-items:center;gap:.4rem}
+  .ring-label{font-size:11px;color:var(--text-muted);text-align:center}
+
+  /* TOAST */
+  #toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:.6rem 1.1rem;border-radius:var(--radius-md);font-size:13px;font-weight:500;z-index:999;transition:opacity .3s;opacity:0;pointer-events:none}
+  #toast.show{opacity:1}
+  #toast.ok{background:var(--green-50);color:var(--green-800);border:.5px solid var(--green-200)}
+  #toast.err{background:var(--red-50);color:var(--red-800);border:.5px solid var(--red-600)}
+
+  /* CRM PIPELINE */
+  .pipe-col{background:var(--surface2);border-radius:var(--radius-md);padding:.75rem;min-height:120px}
+  .pipe-col-title{font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+  .pipe-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius-sm);padding:.6rem .75rem;margin-bottom:.5rem;font-size:12px}
+  .pipe-card-name{font-weight:500;margin-bottom:.2rem}
+  .pipe-card-org{color:var(--text-muted);font-size:11px}
+
+  /* METRIC BAR */
+  .mrow{display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;font-size:13px}
+  .mname{width:120px;color:var(--text-muted);flex-shrink:0;font-size:12px}
+  .mbar-wrap{background:var(--surface2);border-radius:99px;height:7px;flex:1;overflow:hidden}
+  .mbar{height:7px;border-radius:99px;transition:width .4s}
+  .mval{font-size:12px;color:var(--text-muted);width:18px;text-align:right}
+
+  /* POST STATUS CARD */
+  .post-status-card{background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1rem}
+  .psc-header{padding:.85rem 1.25rem;border-bottom:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+  .psc-body{padding:1rem 1.25rem}
+  .psc-kpi{display:flex;gap:1.25rem;flex-wrap:wrap;padding:.6rem 1.25rem;background:var(--surface2);border-top:.5px solid var(--border)}
+  .ki{font-size:12px;color:var(--text-muted)}
+  .ki strong{display:block;font-size:14px;font-weight:500;color:var(--text)}
+
+  .divider{border:none;border-top:.5px solid var(--border);margin:1.5rem 0}
+
+  /* SETUP GUIDE */
+  .step-num{width:24px;height:24px;border-radius:50%;background:var(--blue-50);color:var(--blue-800);font-size:12px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:.6rem}
+  .step-row{display:flex;align-items:flex-start;margin-bottom:1rem;font-size:13px}
+  .step-row code{font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px;font-family:var(--font-mono)}
+  pre.code-block{background:var(--surface2);border-radius:var(--radius-md);padding:1rem;font-size:11px;font-family:var(--font-mono);line-height:1.7;overflow-x:auto;color:var(--text-muted);margin:.5rem 0 1rem;border:.5px solid var(--border)}
+</style>
+</head>
+<body>
+
+<!-- SETUP BANNER -->
+<div id="setup-banner">
+  <span>⚠️ Google Sheets not connected.</span>
+  <span style="color:var(--amber-600)">Paste your Apps Script Web App URL:</span>
+  <input id="script-url-input" type="text" placeholder="https://script.google.com/macros/s/YOUR_ID/exec" />
+  <button onclick="saveScriptUrl()">Connect</button>
+  <button onclick="document.getElementById('setup-banner').classList.add('hidden')" style="background:transparent;color:var(--amber-800);border:none;cursor:pointer;font:inherit;font-size:12px">Skip</button>
+</div>
+
+<nav>
+  <span class="nav-logo">IEG Beta Lab</span>
+  <button class="active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+  <button onclick="switchTab('posts')">📣 Posts</button>
+  <button onclick="switchTab('kpi')">📈 KPI Log</button>
+  <button onclick="switchTab('crm')">🤝 DM Pipeline</button>
+  <button onclick="switchTab('retro')">💬 Retro</button>
+  <button onclick="switchTab('setup')">⚙️ Setup</button>
+  <div class="nav-right">
+    <span id="sync-status" style="font-size:11px;color:var(--text-hint)">● not synced</span>
+  </div>
+</nav>
+
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════
+     DASHBOARD
+══════════════════════════════════════════════ -->
+<section id="dashboard" class="active">
+  <div class="eyebrow">Beta Lab Campaign Tracker</div>
+  <h1>Campaign Dashboard</h1>
+  <p class="lead">Live view of all three posts, KPIs, and pipeline status. Data syncs to Google Sheets on every save.</p>
+
+  <!-- POST STATUS STRIP -->
+  <div class="cg3" style="margin-bottom:1.5rem">
+    <div class="post-status-card" style="margin-bottom:0;border-left:3px solid var(--blue-600)">
+      <div class="psc-header">
+        <div>
+          <div style="font-size:11px;color:var(--text-hint)">Post 1</div>
+          <div style="font-size:13px;font-weight:500">Set the Stage</div>
+        </div>
+        <select class="fi" style="width:auto;font-size:11px;padding:.25rem .5rem" onchange="updatePostStatus(1,this.value)" id="ps1">
+          <option value="draft">Draft</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="live">Live</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div class="psc-kpi">
+        <div class="ki"><strong id="d-p1-imp">—</strong>Impressions</div>
+        <div class="ki"><strong id="d-p1-fol">—</strong>Followers+</div>
+        <div class="ki"><strong id="d-p1-com">—</strong>Comments</div>
+      </div>
+    </div>
+    <div class="post-status-card" style="margin-bottom:0;border-left:3px solid var(--teal-600)">
+      <div class="psc-header">
+        <div>
+          <div style="font-size:11px;color:var(--text-hint)">Post 2</div>
+          <div style="font-size:13px;font-weight:500">Poll</div>
+        </div>
+        <select class="fi" style="width:auto;font-size:11px;padding:.25rem .5rem" onchange="updatePostStatus(2,this.value)" id="ps2">
+          <option value="draft">Draft</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="live">Live</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div class="psc-kpi">
+        <div class="ki"><strong id="d-p2-imp">—</strong>Impressions</div>
+        <div class="ki"><strong id="d-p2-poll">—</strong>Poll votes</div>
+        <div class="ki"><strong id="d-p2-int">—</strong>Interview leads</div>
+      </div>
+    </div>
+    <div class="post-status-card" style="margin-bottom:0;border-left:3px solid var(--amber-600)">
+      <div class="psc-header">
+        <div>
+          <div style="font-size:11px;color:var(--text-hint)">Post 3</div>
+          <div style="font-size:13px;font-weight:500">Revenue Pitch</div>
+        </div>
+        <select class="fi" style="width:auto;font-size:11px;padding:.25rem .5rem" onchange="updatePostStatus(3,this.value)" id="ps3">
+          <option value="draft">Draft</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="live">Live</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div class="psc-kpi">
+        <div class="ki"><strong id="d-p3-imp">—</strong>Impressions</div>
+        <div class="ki"><strong id="d-p3-lab">—</strong>LAB comments</div>
+        <div class="ki"><strong id="d-p3-dm">—</strong>DMs sent</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY STATS -->
+  <h2 style="margin-bottom:.75rem">Campaign totals</h2>
+  <div class="cg4" style="margin-bottom:1.5rem">
+    <div class="stat"><div class="stat-num" id="tot-imp">0</div><div class="stat-label">Total impressions</div></div>
+    <div class="stat"><div class="stat-num" id="tot-fol">0</div><div class="stat-label">Follower gain</div></div>
+    <div class="stat"><div class="stat-num" id="tot-dm">0</div><div class="stat-label">DMs sent</div></div>
+    <div class="stat"><div class="stat-num" id="tot-pipe">0</div><div class="stat-label">Pipeline contacts</div></div>
+  </div>
+
+  <!-- PIPELINE MINI -->
+  <h2 style="margin-bottom:.75rem">Partner pipeline</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.75rem;margin-bottom:1.5rem" id="dash-pipe">
+    <div class="pipe-col"><div class="pipe-col-title">New Lead</div><div id="dp-new" style="font-size:22px;font-weight:500;color:var(--text-muted)">0</div></div>
+    <div class="pipe-col"><div class="pipe-col-title">DM Sent</div><div id="dp-dm" style="font-size:22px;font-weight:500;color:var(--blue-800)">0</div></div>
+    <div class="pipe-col"><div class="pipe-col-title">Form In</div><div id="dp-form" style="font-size:22px;font-weight:500;color:var(--teal-800)">0</div></div>
+    <div class="pipe-col"><div class="pipe-col-title">Interview</div><div id="dp-int" style="font-size:22px;font-weight:500;color:var(--purple-800)">0</div></div>
+    <div class="pipe-col"><div class="pipe-col-title">Contracted</div><div id="dp-con" style="font-size:22px;font-weight:500;color:var(--green-800)">0</div></div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end">
+    <button class="btn primary" onclick="loadAll()">↻ Refresh from Sheets</button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     POSTS — status tracker
+══════════════════════════════════════════════ -->
+<section id="posts">
+  <div class="eyebrow">Content status</div>
+  <h1>Post Status Tracker</h1>
+  <p class="lead">Track each post through Draft → Scheduled → Live → Done. Status and publish date sync to Google Sheets.</p>
+
+  <div id="post-cards">
+    <!-- generated by JS -->
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     KPI LOG
+══════════════════════════════════════════════ -->
+<section id="kpi">
+  <div class="eyebrow">Performance tracking</div>
+  <h1>KPI Log</h1>
+  <p class="lead">Enter metrics after each post goes live. Every save writes a new row to Google Sheets automatically.</p>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <h3 style="margin-bottom:1rem">Log new entry</h3>
+    <div class="cg2">
+      <div class="fg"><label class="fl">Post</label>
+        <select class="fi" id="kp-post">
+          <option value="P1">Post 1 — Set the Stage</option>
+          <option value="P2">Post 2 — Poll</option>
+          <option value="P3">Post 3 — Revenue Pitch</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Date</label><input type="date" class="fi" id="kp-date"></div>
+    </div>
+    <div class="cg4">
+      <div class="fg"><label class="fl">Impressions</label><input type="number" class="fi" id="kp-imp" placeholder="0"></div>
+      <div class="fg"><label class="fl">Likes + reactions</label><input type="number" class="fi" id="kp-like" placeholder="0"></div>
+      <div class="fg"><label class="fl">Comments</label><input type="number" class="fi" id="kp-com" placeholder="0"></div>
+      <div class="fg"><label class="fl">Follower gain</label><input type="number" class="fi" id="kp-fol" placeholder="0"></div>
+      <div class="fg"><label class="fl">Poll votes</label><input type="number" class="fi" id="kp-poll" placeholder="P2 only"></div>
+      <div class="fg"><label class="fl">LAB comments</label><input type="number" class="fi" id="kp-lab" placeholder="P3 only"></div>
+      <div class="fg"><label class="fl">DMs sent</label><input type="number" class="fi" id="kp-dm" placeholder="0"></div>
+      <div class="fg"><label class="fl">Form submissions</label><input type="number" class="fi" id="kp-form" placeholder="0"></div>
+    </div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="fi" id="kp-note" placeholder="e.g. Tuesday 8 AM posting outperformed Thursday by 2x on impressions"></textarea></div>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <button class="btn primary" onclick="saveKpi()">Save to Sheets ↗</button>
+      <span id="kpi-saving" style="font-size:12px;color:var(--text-muted);display:none">Saving…</span>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+    <h2 style="margin:0">Entry log</h2>
+    <button class="btn sm" onclick="loadKpiLog()">↻ Reload</button>
+  </div>
+  <div class="card" style="overflow-x:auto">
+    <table class="tbl" id="kpi-table">
+      <thead><tr>
+        <th>Date</th><th>Post</th><th>Impr.</th><th>Likes</th><th>Comments</th>
+        <th>Followers+</th><th>Poll</th><th>LAB</th><th>DMs</th><th>Forms</th><th>Notes</th>
+      </tr></thead>
+      <tbody id="kpi-tbody">
+        <tr><td colspan="11" style="text-align:center;color:var(--text-hint);padding:2rem">No entries yet — connect Sheets and save your first KPI.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CRM / DM PIPELINE
+══════════════════════════════════════════════ -->
+<section id="crm">
+  <div class="eyebrow">Lead management</div>
+  <h1>DM Pipeline</h1>
+  <p class="lead">Track every "LAB" commenter from first contact to signed contract. Syncs to the Contacts sheet in Google Sheets.</p>
+
+  <!-- ADD CONTACT -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <h3 style="margin-bottom:1rem">Add contact</h3>
+    <div class="cg2">
+      <div class="fg"><label class="fl">Name</label><input type="text" class="fi" id="cr-name" placeholder="e.g. Fatima Al-Rashid"></div>
+      <div class="fg"><label class="fl">Organization</label><input type="text" class="fi" id="cr-org" placeholder="e.g. PSDC Penang"></div>
+      <div class="fg"><label class="fl">LinkedIn URL</label><input type="text" class="fi" id="cr-url" placeholder="https://linkedin.com/in/..."></div>
+      <div class="fg"><label class="fl">Stage</label>
+        <select class="fi" id="cr-stage">
+          <option value="New Lead">New Lead</option>
+          <option value="DM Sent">DM Sent</option>
+          <option value="Form In">Form In</option>
+          <option value="Interview">Interview</option>
+          <option value="Contracted">Contracted</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">DM Type</label>
+        <select class="fi" id="cr-dm">
+          <option value="A">Type A — Cold contact</option>
+          <option value="B">Type B — Warm contact</option>
+          <option value="C">Type C — Form handoff</option>
+          <option value="—">Not sent yet</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Country / Region</label><input type="text" class="fi" id="cr-country" placeholder="e.g. Malaysia, Penang"></div>
+    </div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="fi" id="cr-note" rows="2" placeholder="e.g. Interested in semiconductor curriculum, HRD Corp funding available"></textarea></div>
+    <button class="btn primary" onclick="saveContact()">Add to pipeline ↗</button>
+  </div>
+
+  <!-- PIPELINE KANBAN -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+    <h2 style="margin:0">Pipeline board</h2>
+    <button class="btn sm" onclick="loadContacts()">↻ Reload</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1.5rem" id="kanban">
+    <div class="pipe-col" id="col-New Lead"><div class="pipe-col-title">New Lead</div></div>
+    <div class="pipe-col" id="col-DM Sent"><div class="pipe-col-title">DM Sent</div></div>
+    <div class="pipe-col" id="col-Form In"><div class="pipe-col-title">Form In</div></div>
+    <div class="pipe-col" id="col-Interview"><div class="pipe-col-title">Interview</div></div>
+    <div class="pipe-col" id="col-Contracted"><div class="pipe-col-title">Contracted</div></div>
+  </div>
+
+  <!-- CONTACT TABLE -->
+  <h2 style="margin-bottom:.75rem">All contacts</h2>
+  <div class="card" style="overflow-x:auto">
+    <table class="tbl" id="crm-table">
+      <thead><tr><th>Name</th><th>Organization</th><th>Stage</th><th>DM Type</th><th>Country</th><th>Notes</th><th>Added</th></tr></thead>
+      <tbody id="crm-tbody">
+        <tr><td colspan="7" style="text-align:center;color:var(--text-hint);padding:2rem">No contacts yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     RETRO
+══════════════════════════════════════════════ -->
+<section id="retro">
+  <div class="eyebrow">Weekly review</div>
+  <h1>Team Retro</h1>
+  <p class="lead">Keep / Improve / Next format. Saved to the Retro sheet in Google Sheets. Run every Friday.</p>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="cg2" style="margin-bottom:1rem">
+      <div class="fg" style="margin:0"><label class="fl">Week</label>
+        <select class="fi" id="rt-week">
+          <option>Week 1</option><option>Week 2</option><option>Week 3</option><option>Week 4</option>
+        </select>
+      </div>
+      <div class="fg" style="margin:0"><label class="fl">Date</label><input type="date" class="fi" id="rt-date"></div>
+    </div>
+
+    <div style="margin-bottom:1rem">
+      <div style="font-size:13px;font-weight:500;margin-bottom:.75rem">Self-assessment (1–5)</div>
+      <div class="mrow"><span class="mname">Content quality</span><div class="mbar-wrap"><div class="mbar" id="mb-content" style="width:60%;background:var(--blue-200)"></div></div><input type="range" min="1" max="5" value="3" style="width:70px" oninput="updateMbar('content',this.value)" id="ms-content"><span class="mval" id="mv-content">3</span></div>
+      <div class="mrow"><span class="mname">Timing & cadence</span><div class="mbar-wrap"><div class="mbar" id="mb-timing" style="width:60%;background:var(--teal-200)"></div></div><input type="range" min="1" max="5" value="3" style="width:70px" oninput="updateMbar('timing',this.value)" id="ms-timing"><span class="mval" id="mv-timing">3</span></div>
+      <div class="mrow"><span class="mname">Team coordination</span><div class="mbar-wrap"><div class="mbar" id="mb-team" style="width:60%;background:var(--purple-200)"></div></div><input type="range" min="1" max="5" value="3" style="width:70px" oninput="updateMbar('team',this.value)" id="ms-team"><span class="mval" id="mv-team">3</span></div>
+      <div class="mrow"><span class="mname">KPI attainment</span><div class="mbar-wrap"><div class="mbar" id="mb-kpi" style="width:60%;background:var(--amber-200)"></div></div><input type="range" min="1" max="5" value="3" style="width:70px" oninput="updateMbar('kpi',this.value)" id="ms-kpi"><span class="mval" id="mv-kpi">3</span></div>
+    </div>
+
+    <div class="cg2" style="margin-bottom:1rem">
+      <div class="fg" style="margin:0"><label class="fl">Keep — what worked</label><textarea class="fi" id="rt-keep" rows="3" placeholder="e.g. Commenting within 30 min of posting boosted early reach significantly"></textarea></div>
+      <div class="fg" style="margin:0"><label class="fl">Improve — what to fix</label><textarea class="fi" id="rt-improve" rows="3" placeholder="e.g. Post 2 should go live at 8 AM, not 9 AM"></textarea></div>
+    </div>
+    <div class="fg"><label class="fl">Next — priority action</label><textarea class="fi" id="rt-next" rows="2" placeholder="e.g. Send DM to all 20 LAB commenters by Wednesday"></textarea></div>
+    <button class="btn primary" onclick="saveRetro()">Save retro to Sheets ↗</button>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+    <h2 style="margin:0">Retro log</h2>
+    <button class="btn sm" onclick="loadRetros()">↻ Reload</button>
+  </div>
+  <div id="retro-log"><div style="font-size:13px;color:var(--text-hint);padding:1rem 0">No retros saved yet.</div></div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SETUP GUIDE
+══════════════════════════════════════════════ -->
+<section id="setup">
+  <div class="eyebrow">One-time configuration</div>
+  <h1>Google Sheets Setup</h1>
+  <p class="lead">Follow these steps once. After connecting, all KPI saves, contact adds, and retros write directly to your Sheets.</p>
+
+  <div class="card" style="margin-bottom:1rem">
+    <h3 style="margin-bottom:1rem">Step 1 — Create the Google Sheet</h3>
+    <div class="step-row"><span class="step-num">1</span><span>Go to <a href="https://sheets.google.com" target="_blank">sheets.google.com</a> → create a new spreadsheet named <strong>IEG Beta Lab Tracker</strong></span></div>
+    <div class="step-row"><span class="step-num">2</span><span>Create four tabs (sheets) named exactly: <code>KPI</code>, <code>Contacts</code>, <code>Retro</code>, <code>PostStatus</code></span></div>
+    <div class="step-row"><span class="step-num">3</span><span>In the <code>KPI</code> tab, add these headers in row 1:</span></div>
+    <pre class="code-block">Timestamp | Date | Post | Impressions | Likes | Comments | Followers | PollVotes | LABComments | DMsSent | FormSubmissions | Notes</pre>
+    <div class="step-row"><span class="step-num">4</span><span>In the <code>Contacts</code> tab, add headers in row 1:</span></div>
+    <pre class="code-block">Timestamp | Name | Organization | LinkedIn | Stage | DMType | Country | Notes</pre>
+    <div class="step-row"><span class="step-num">5</span><span>In the <code>Retro</code> tab, add headers in row 1:</span></div>
+    <pre class="code-block">Timestamp | Date | Week | Content | Timing | Team | KPI | Keep | Improve | Next</pre>
+    <div class="step-row"><span class="step-num">6</span><span>In the <code>PostStatus</code> tab, add headers in row 1:</span></div>
+    <pre class="code-block">Post | Status | PublishDate | UpdatedAt</pre>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <h3 style="margin-bottom:1rem">Step 2 — Create the Apps Script</h3>
+    <div class="step-row"><span class="step-num">1</span><span>In the Spreadsheet, go to <strong>Extensions → Apps Script</strong></span></div>
+    <div class="step-row"><span class="step-num">2</span><span>Delete any existing code. Paste this entire script:</span></div>
+    <pre class="code-block">const SS = SpreadsheetApp.getActiveSpreadsheet();
+
+function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+  const sheet = SS.getSheetByName(data.sheet);
+  if (!sheet) return resp({ok:false, error:'Sheet not found: '+data.sheet});
+  sheet.appendRow(data.row);
+  return resp({ok:true});
+}
+
+function doGet(e) {
+  const name = e.parameter.sheet;
+  const sheet = SS.getSheetByName(name);
+  if (!sheet) return resp({ok:false, error:'Sheet not found: '+name});
+  const rows = sheet.getDataRange().getValues();
+  return resp({ok:true, rows:rows});
+}
+
+function resp(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+    <div class="step-row"><span class="step-num">3</span><span>Click <strong>Deploy → New deployment</strong> → Type: <strong>Web app</strong></span></div>
+    <div class="step-row"><span class="step-num">4</span><span>Set "Execute as": <strong>Me</strong> — "Who has access": <strong>Anyone</strong> → Deploy</span></div>
+    <div class="step-row"><span class="step-num">5</span><span>Authorize when prompted. Copy the <strong>Web app URL</strong> that appears.</span></div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <h3 style="margin-bottom:1rem">Step 3 — Connect here</h3>
+    <div class="fg"><label class="fl">Apps Script Web App URL</label><input type="text" class="fi" id="setup-url-input" placeholder="https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec"></div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn primary" onclick="saveScriptUrlFromSetup()">Save & test connection</button>
+      <button class="btn" onclick="testConnection()">Test only</button>
+    </div>
+    <div id="conn-result" style="margin-top:.75rem;font-size:13px;color:var(--text-muted)"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:.5rem">Current connection</h3>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:.75rem" id="current-url-display">No URL saved yet.</div>
+    <button class="btn sm danger" onclick="clearConnection()">Disconnect</button>
+  </div>
+</section>
+
+<script>
+// ── STATE ──────────────────────────────────────────
+const LS = localStorage;
+let SCRIPT_URL = LS.getItem('ieg_script_url') || '';
+let kpiData = [];
+let contactData = [];
+let retroData = [];
+let postStatus = {1:'draft',2:'draft',3:'draft'};
+
+const POST_INFO = {
+  1:{label:'Post 1 — Set the Stage',color:'var(--blue-600)',desc:'Assumption breaker, follower CTA'},
+  2:{label:'Post 2 — Poll',color:'var(--teal-600)',desc:'LinkedIn Poll, BOM input, interview pipeline'},
+  3:{label:'Post 3 — Revenue Pitch',color:'var(--amber-600)',desc:'LAB comment hook, DM funnel open'}
+};
+
+const STAGE_ORDER = ['New Lead','DM Sent','Form In','Interview','Contracted'];
+
+// ── INIT ───────────────────────────────────────────
+window.onload = () => {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('kp-date').value = today;
+  document.getElementById('rt-date').value = today;
+  ['content','timing','team','kpi'].forEach(k => updateMbar(k, 3));
+  updateBanner();
+  renderPostCards();
+  loadAll();
+};
+
+function updateBanner() {
+  const banner = document.getElementById('setup-banner');
+  if (SCRIPT_URL) {
+    banner.classList.add('hidden');
+    document.getElementById('sync-status').textContent = '● connected';
+    document.getElementById('sync-status').style.color = 'var(--green-600)';
+  } else {
+    banner.classList.remove('hidden');
+  }
+  const disp = document.getElementById('current-url-display');
+  if (disp) disp.textContent = SCRIPT_URL || 'No URL saved yet.';
+  const inp = document.getElementById('setup-url-input');
+  if (inp && SCRIPT_URL) inp.value = SCRIPT_URL;
+}
+
+// ── NAV ────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── TOAST ──────────────────────────────────────────
+function toast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+
+// ── SHEETS API ─────────────────────────────────────
+async function sheetPost(sheet, row) {
+  if (!SCRIPT_URL) { toast('Connect Google Sheets first (Setup tab)', 'err'); return false; }
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({sheet, row}),
+      headers:{'Content-Type':'application/json'}
+    });
+    const d = await res.json();
+    if (!d.ok) throw new Error(d.error);
+    return true;
+  } catch(e) {
+    toast('Sheets error: ' + e.message, 'err');
+    return false;
+  }
+}
+
+async function sheetGet(sheet) {
+  if (!SCRIPT_URL) return null;
+  try {
+    const res = await fetch(`${SCRIPT_URL}?sheet=${encodeURIComponent(sheet)}`);
+    const d = await res.json();
+    return d.ok ? d.rows : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+// ── LOAD ALL ───────────────────────────────────────
+async function loadAll() {
+  await Promise.all([loadKpiLog(), loadContacts(), loadRetros(), loadPostStatus()]);
+  updateDashboard();
+}
+
+// ── POST STATUS ────────────────────────────────────
+function renderPostCards() {
+  const wrap = document.getElementById('post-cards');
+  wrap.innerHTML = [1,2,3].map(n => {
+    const p = POST_INFO[n];
+    const colors = {1:'var(--blue-600)',2:'var(--teal-600)',3:'var(--amber-600)'};
+    const stages = ['draft','scheduled','live','done'];
+    const labels = {draft:'Draft',scheduled:'Scheduled',live:'Live',done:'Done'};
+    const stageOpts = stages.map(s => `<option value="${s}">${labels[s]}</option>`).join('');
+    return `<div class="post-status-card" style="border-left:3px solid ${p.color}">
+      <div class="psc-header">
+        <div>
+          <div style="font-size:11px;color:var(--text-hint)">Post ${n}</div>
+          <div style="font-size:14px;font-weight:500">${p.label.replace('Post '+n+' — ','')}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${p.desc}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem">
+          <select class="fi" style="width:auto;font-size:11px;padding:.25rem .5rem" id="psc-status-${n}" onchange="updatePostStatus(${n},this.value)">${stageOpts}</select>
+          <input type="date" class="fi" style="font-size:11px;padding:.25rem .5rem;width:auto" id="psc-date-${n}" onchange="updatePostDate(${n},this.value)">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updatePostStatus(n, val) {
+  postStatus[n] = val;
+  const dateEl = document.getElementById(`psc-date-${n}`);
+  const date = dateEl ? dateEl.value : '';
+  await sheetPost('PostStatus', [n, val, date, new Date().toISOString()]);
+  syncPostStatusDropdowns();
+  updateDashboard();
+  toast(`Post ${n} status updated: ${val}`);
+}
+
+async function updatePostDate(n, val) {
+  const statusEl = document.getElementById(`psc-status-${n}`);
+  const status = statusEl ? statusEl.value : postStatus[n];
+  await sheetPost('PostStatus', [n, status, val, new Date().toISOString()]);
+  toast(`Post ${n} publish date saved`);
+}
+
+async function loadPostStatus() {
+  const rows = await sheetGet('PostStatus');
+  if (!rows || rows.length < 2) return;
+  rows.slice(1).forEach(r => {
+    const n = parseInt(r[0]);
+    if (!n) return;
+    postStatus[n] = r[1] || 'draft';
+    const sel = document.getElementById(`ps${n}`);
+    if (sel) sel.value = postStatus[n];
+    const selCard = document.getElementById(`psc-status-${n}`);
+    if (selCard) selCard.value = postStatus[n];
+    const dateCard = document.getElementById(`psc-date-${n}`);
+    if (dateCard && r[2]) dateCard.value = r[2];
+  });
+}
+
+function syncPostStatusDropdowns() {
+  [1,2,3].forEach(n => {
+    const dash = document.getElementById(`ps${n}`);
+    const card = document.getElementById(`psc-status-${n}`);
+    if (dash && card) dash.value = card.value;
+  });
+}
+
+// ── KPI ────────────────────────────────────────────
+async function saveKpi() {
+  const saving = document.getElementById('kpi-saving');
+  saving.style.display = 'inline';
+  const row = [
+    new Date().toISOString(),
+    document.getElementById('kp-date').value,
+    document.getElementById('kp-post').value,
+    document.getElementById('kp-imp').value || 0,
+    document.getElementById('kp-like').value || 0,
+    document.getElementById('kp-com').value || 0,
+    document.getElementById('kp-fol').value || 0,
+    document.getElementById('kp-poll').value || 0,
+    document.getElementById('kp-lab').value || 0,
+    document.getElementById('kp-dm').value || 0,
+    document.getElementById('kp-form').value || 0,
+    document.getElementById('kp-note').value
+  ];
+  const ok = await sheetPost('KPI', row);
+  saving.style.display = 'none';
+  if (ok) {
+    toast('KPI saved to Sheets ✓');
+    ['kp-imp','kp-like','kp-com','kp-fol','kp-poll','kp-lab','kp-dm','kp-form','kp-note'].forEach(id => document.getElementById(id).value = '');
+    await loadKpiLog();
+    updateDashboard();
+  }
+}
+
+async function loadKpiLog() {
+  const rows = await sheetGet('KPI');
+  if (!rows) return;
+  kpiData = rows.slice(1).filter(r => r[0]);
+  renderKpiTable();
+}
+
+function renderKpiTable() {
+  const tbody = document.getElementById('kpi-tbody');
+  if (!kpiData.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text-hint);padding:2rem">No entries yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [...kpiData].reverse().map(r => `<tr>
+    <td style="white-space:nowrap">${String(r[1]).slice(0,10)}</td>
+    <td><span class="badge ${r[2]==='P1'?'b-blue':r[2]==='P2'?'b-teal':'b-amber'}">${r[2]}</span></td>
+    <td>${r[3]||'—'}</td><td>${r[4]||'—'}</td><td>${r[5]||'—'}</td>
+    <td>${r[6]||'—'}</td><td>${r[7]||'—'}</td><td>${r[8]||'—'}</td>
+    <td>${r[9]||'—'}</td><td>${r[10]||'—'}</td>
+    <td style="color:var(--text-muted);font-size:12px;max-width:180px">${r[11]||'—'}</td>
+  </tr>`).join('');
+}
+
+// ── CONTACTS / CRM ─────────────────────────────────
+async function saveContact() {
+  const row = [
+    new Date().toISOString(),
+    document.getElementById('cr-name').value,
+    document.getElementById('cr-org').value,
+    document.getElementById('cr-url').value,
+    document.getElementById('cr-stage').value,
+    document.getElementById('cr-dm').value,
+    document.getElementById('cr-country').value,
+    document.getElementById('cr-note').value
+  ];
+  if (!row[1]) { toast('Name is required', 'err'); return; }
+  const ok = await sheetPost('Contacts', row);
+  if (ok) {
+    toast('Contact saved ✓');
+    ['cr-name','cr-org','cr-url','cr-note','cr-country'].forEach(id => document.getElementById(id).value = '');
+    await loadContacts();
+    updateDashboard();
+  }
+}
+
+async function loadContacts() {
+  const rows = await sheetGet('Contacts');
+  if (!rows) return;
+  contactData = rows.slice(1).filter(r => r[0]);
+  renderKanban();
+  renderCrmTable();
+}
+
+function renderKanban() {
+  STAGE_ORDER.forEach(stage => {
+    const col = document.getElementById('col-' + stage);
+    if (!col) return;
+    const cards = contactData.filter(r => r[4] === stage);
+    const existing = col.querySelector('.pipe-col-title');
+    col.innerHTML = '';
+    col.appendChild(existing || Object.assign(document.createElement('div'), {className:'pipe-col-title',textContent:stage}));
+    if (!cards.length) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:11px;color:var(--text-hint);padding:.5rem 0';
+      empty.textContent = 'Empty';
+      col.appendChild(empty);
+    } else {
+      cards.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'pipe-card';
+        card.innerHTML = `<div class="pipe-card-name">${r[1]}</div><div class="pipe-card-org">${r[2]||''}</div>${r[6]?`<div style="font-size:10px;color:var(--text-hint);margin-top:.2rem">${r[6]}</div>`:''}`;
+        col.appendChild(card);
+      });
+    }
+  });
+  // update dash mini counts
+  STAGE_ORDER.forEach(stage => {
+    const id = 'dp-' + {
+      'New Lead':'new','DM Sent':'dm','Form In':'form','Interview':'int','Contracted':'con'
+    }[stage];
+    const el = document.getElementById(id);
+    if (el) el.textContent = contactData.filter(r => r[4] === stage).length;
+  });
+}
+
+function renderCrmTable() {
+  const tbody = document.getElementById('crm-tbody');
+  if (!contactData.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-hint);padding:2rem">No contacts yet.</td></tr>';
+    return;
+  }
+  const stageBadge = {
+    'New Lead':'b-gray','DM Sent':'b-blue','Form In':'b-teal',
+    'Interview':'b-purple','Contracted':'b-green'
+  };
+  tbody.innerHTML = [...contactData].reverse().map(r => `<tr>
+    <td style="font-weight:500">${r[1]}</td>
+    <td>${r[2]||'—'}</td>
+    <td><span class="badge ${stageBadge[r[4]]||'b-gray'}">${r[4]}</span></td>
+    <td><span class="badge b-blue">Type ${r[5]}</span></td>
+    <td>${r[6]||'—'}</td>
+    <td style="color:var(--text-muted);font-size:12px;max-width:160px">${r[7]||'—'}</td>
+    <td style="font-size:11px;color:var(--text-hint);white-space:nowrap">${String(r[0]).slice(0,10)}</td>
+  </tr>`).join('');
+}
+
+// ── RETRO ──────────────────────────────────────────
+async function saveRetro() {
+  const row = [
+    new Date().toISOString(),
+    document.getElementById('rt-date').value,
+    document.getElementById('rt-week').value,
+    document.getElementById('ms-content').value,
+    document.getElementById('ms-timing').value,
+    document.getElementById('ms-team').value,
+    document.getElementById('ms-kpi').value,
+    document.getElementById('rt-keep').value,
+    document.getElementById('rt-improve').value,
+    document.getElementById('rt-next').value
+  ];
+  const ok = await sheetPost('Retro', row);
+  if (ok) {
+    toast('Retro saved to Sheets ✓');
+    ['rt-keep','rt-improve','rt-next'].forEach(id => document.getElementById(id).value = '');
+    await loadRetros();
+  }
+}
+
+async function loadRetros() {
+  const rows = await sheetGet('Retro');
+  if (!rows) return;
+  retroData = rows.slice(1).filter(r => r[0]);
+  renderRetroLog();
+}
+
+function renderRetroLog() {
+  const el = document.getElementById('retro-log');
+  if (!retroData.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-hint);padding:1rem 0">No retros saved yet.</div>'; return; }
+  el.innerHTML = [...retroData].reverse().map(r => `
+    <div class="card" style="margin-bottom:.75rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <span class="badge b-purple">${r[2]}</span>
+        <span style="font-size:11px;color:var(--text-hint)">${String(r[1]).slice(0,10)}</span>
+      </div>
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:.75rem">
+        <div style="font-size:12px;color:var(--text-muted)">Content: <strong>${r[3]}/5</strong></div>
+        <div style="font-size:12px;color:var(--text-muted)">Timing: <strong>${r[4]}/5</strong></div>
+        <div style="font-size:12px;color:var(--text-muted)">Team: <strong>${r[5]}/5</strong></div>
+        <div style="font-size:12px;color:var(--text-muted)">KPI: <strong>${r[6]}/5</strong></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
+        ${r[7]?`<div><div style="font-size:11px;color:var(--green-600);font-weight:500;margin-bottom:.2rem">Keep</div><div style="font-size:13px;color:var(--text-muted)">${r[7]}</div></div>`:''}
+        ${r[8]?`<div><div style="font-size:11px;color:var(--amber-600);font-weight:500;margin-bottom:.2rem">Improve</div><div style="font-size:13px;color:var(--text-muted)">${r[8]}</div></div>`:''}
+        ${r[9]?`<div><div style="font-size:11px;color:var(--blue-600);font-weight:500;margin-bottom:.2rem">Next</div><div style="font-size:13px;color:var(--text-muted)">${r[9]}</div></div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ── DASHBOARD TOTALS ───────────────────────────────
+function updateDashboard() {
+  const totImp = kpiData.reduce((s,r) => s + (parseFloat(r[3])||0), 0);
+  const totFol = kpiData.reduce((s,r) => s + (parseFloat(r[6])||0), 0);
+  const totDm  = kpiData.reduce((s,r) => s + (parseFloat(r[9])||0), 0);
+  document.getElementById('tot-imp').textContent = totImp.toLocaleString();
+  document.getElementById('tot-fol').textContent = totFol.toLocaleString();
+  document.getElementById('tot-dm').textContent  = totDm.toLocaleString();
+  document.getElementById('tot-pipe').textContent = contactData.length;
+
+  // per-post dashboard KPIs
+  const byPost = {P1:[],P2:[],P3:[]};
+  kpiData.forEach(r => { if(byPost[r[2]]) byPost[r[2]].push(r); });
+
+  const sum = (arr, idx) => arr.reduce((s,r) => s+(parseFloat(r[idx])||0), 0);
+  if (byPost.P1.length) {
+    document.getElementById('d-p1-imp').textContent = sum(byPost.P1,3).toLocaleString();
+    document.getElementById('d-p1-fol').textContent = sum(byPost.P1,6);
+    document.getElementById('d-p1-com').textContent = sum(byPost.P1,5);
+  }
+  if (byPost.P2.length) {
+    document.getElementById('d-p2-imp').textContent  = sum(byPost.P2,3).toLocaleString();
+    document.getElementById('d-p2-poll').textContent = sum(byPost.P2,7);
+    document.getElementById('d-p2-int').textContent  = sum(byPost.P2,10);
+  }
+  if (byPost.P3.length) {
+    document.getElementById('d-p3-imp').textContent = sum(byPost.P3,3).toLocaleString();
+    document.getElementById('d-p3-lab').textContent = sum(byPost.P3,8);
+    document.getElementById('d-p3-dm').textContent  = sum(byPost.P3,9);
+  }
+}
+
+// ── METER BARS ─────────────────────────────────────
+function updateMbar(key, val) {
+  document.getElementById('mb-'+key).style.width = (val/5*100)+'%';
+  document.getElementById('mv-'+key).textContent = val;
+}
+
+// ── CONNECTION ─────────────────────────────────────
+function saveScriptUrl() {
+  const url = document.getElementById('script-url-input').value.trim();
+  if (!url.startsWith('https://script.google.com')) { toast('Invalid URL', 'err'); return; }
+  SCRIPT_URL = url;
+  LS.setItem('ieg_script_url', url);
+  updateBanner();
+  toast('Connected! Loading data…');
+  loadAll();
+}
+
+function saveScriptUrlFromSetup() {
+  const url = document.getElementById('setup-url-input').value.trim();
+  if (!url.startsWith('https://script.google.com')) { toast('Invalid URL — must start with https://script.google.com', 'err'); return; }
+  SCRIPT_URL = url;
+  LS.setItem('ieg_script_url', url);
+  document.getElementById('script-url-input').value = url;
+  updateBanner();
+  testConnection();
+}
+
+async function testConnection() {
+  const result = document.getElementById('conn-result');
+  result.textContent = 'Testing…';
+  const rows = await sheetGet('KPI');
+  if (rows !== null) {
+    result.textContent = '✓ Connection successful — KPI sheet found with ' + (rows.length-1) + ' entries.';
+    result.style.color = 'var(--green-600)';
+    toast('Connection confirmed ✓');
+    loadAll();
+  } else {
+    result.textContent = '✗ Could not reach the script. Check the URL and make sure "Anyone" can access the web app.';
+    result.style.color = 'var(--red-600)';
+    toast('Connection failed — check Setup tab', 'err');
+  }
+}
+
+function clearConnection() {
+  SCRIPT_URL = '';
+  LS.removeItem('ieg_script_url');
+  updateBanner();
+  toast('Disconnected');
+}
+</script>
+</body>
+</html>
